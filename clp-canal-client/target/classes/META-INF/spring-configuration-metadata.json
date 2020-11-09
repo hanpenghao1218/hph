@@ -1,0 +1,66 @@
+{
+  "groups": [
+    {
+      "name": "http-data",
+      "type": "com.bestinfo.canal.client.type.HttpData",
+      "sourceType": "com.bestinfo.canal.client.type.HttpData"
+    }
+  ],
+  "properties": [
+    {
+      "name": "http-data.channel-code",
+      "type": "java.lang.String",
+      "description": "渠道编号",
+      "sourceType": "com.bestinfo.canal.client.type.HttpData"
+    },
+    {
+      "name": "http-data.download-url",
+      "type": "java.lang.String",
+      "description": "文件下载地址",
+      "sourceType": "com.bestinfo.canal.client.type.HttpData"
+    },
+    {
+      "name": "http-data.ip",
+      "type": "java.lang.String",
+      "description": "请求ip",
+      "sourceType": "com.bestinfo.canal.client.type.HttpData"
+    },
+    {
+      "name": "http-data.password",
+      "type": "java.lang.String",
+      "description": "渠道密码",
+      "sourceType": "com.bestinfo.canal.client.type.HttpData"
+    },
+    {
+      "name": "http-data.path",
+      "type": "java.lang.String",
+      "description": "本地保存路径",
+      "sourceType": "com.bestinfo.canal.client.type.HttpData"
+    },
+    {
+      "name": "http-data.private-key-str",
+      "type": "java.lang.String",
+      "description": "私钥串",
+      "sourceType": "com.bestinfo.canal.client.type.HttpData"
+    },
+    {
+      "name": "http-data.public-key-str",
+      "type": "java.lang.String",
+      "description": "公钥串",
+      "sourceType": "com.bestinfo.canal.client.type.HttpData"
+    },
+    {
+      "name": "http-data.sign",
+      "type": "java.lang.Boolean",
+      "description": "签名开关",
+      "sourceType": "com.bestinfo.canal.client.type.HttpData"
+    },
+    {
+      "name": "http-data.time-out",
+      "type": "java.lang.Integer",
+      "description": "超时时间",
+      "sourceType": "com.bestinfo.canal.client.type.HttpData"
+    }
+  ],
+  "hints": []
+}
