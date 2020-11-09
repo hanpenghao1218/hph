@@ -1,0 +1,5 @@
+com\bestinfo\canal\notice\impl\NoticeService.class
+com\bestinfo\canal\notice\mapper\NoticeMapper.class
+com\bestinfo\canal\notice\type\BaseResp.class
+com\bestinfo\canal\notice\impl\SimulatorService.class
+com\bestinfo\canal\notice\NoticeApplication.class

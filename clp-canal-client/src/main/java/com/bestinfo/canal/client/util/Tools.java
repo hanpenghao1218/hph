@@ -35,7 +35,6 @@ import okhttp3.Response;
 import redis.clients.jedis.ShardedJedisPool;
 import sun.misc.BASE64Decoder;
 
-@SuppressWarnings("restriction")
 public class Tools {
 	public static final Logger Log = LoggerFactory.getLogger(Tools.class);
 	public static String key = "KenoToken";

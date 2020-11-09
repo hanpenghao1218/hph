@@ -22,7 +22,6 @@ import org.bouncycastle.pqc.math.linearalgebra.ByteUtils;
 import com.bestinfo.canal.client.encrypt.gmhelper.BCECUtil;
 import com.bestinfo.canal.client.encrypt.gmhelper.SM2Util;
 
-@SuppressWarnings("restriction")
 public class KeyTools {
 	public static String[] creatKey() throws Exception {
 		// 生成SM2非对称密钥对

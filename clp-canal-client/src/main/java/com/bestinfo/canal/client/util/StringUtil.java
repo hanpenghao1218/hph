@@ -15,7 +15,7 @@ import java.util.regex.Pattern;
 /**
  * create by peiqing.zheng 字符串工具类
  */
-@SuppressWarnings({ "unused", "restriction" })
+@SuppressWarnings({ "unused" })
 public class StringUtil {
 	// ===========================================================
 	// Constants

@@ -1,0 +1,10 @@
+Manifest-Version: 1.0
+Built-By: XBox
+Build-Jdk: 10.0.1
+Implementation-Title: clp-canal-notice
+Implementation-Version: 1.0.0
+Implementation-Vendor-Id: com.bestinfo.canal
+Implementation-URL: https://projects.spring.io/spring-boot/#/spring-bo
+ ot-starter-parent/clp-canal-notice
+Created-By: Maven Integration for Eclipse
+
