@@ -1,0 +1,14 @@
+base-data: 
+  sendUser: ZHshare@tongshugene.com
+  sendPwd: ZHsh@2021
+  send: false
+  supervisor: hanpenghao@tongshugene.com;qiulihui@tongshugene.com;
+  CRMEmail: caojiayun@tongshugene.com;
+  labEmail: wujingjing@tongshugene.com;
+  medEmail: yinzhiming@tongshugene.com;
+  
+logging:
+  config: classpath:logback-dev-spring.xml
+  path: ./log
+  level: 
+    com.lims.mapper: debug
