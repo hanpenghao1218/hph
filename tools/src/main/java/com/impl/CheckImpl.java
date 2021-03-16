@@ -1,7 +1,9 @@
 package com.impl;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -31,9 +33,11 @@ public class CheckImpl {
 		try {
 			this.baseData = baseData;
 			Map<String, boolean[]> idMap = new HashMap<String, boolean[]>();// 检测单号
+			Map<String, String> idDataMap = new HashMap<String, String>();// 检测单号
 			List<Object[]> crmList = new ArrayList<Object[]>();// crm数据
 			List<Object[]> labList = new ArrayList<Object[]>();// 检测中心数据
 			date = Tools.isNotNull(runDate) ? runDate : Tools.getLastWeek();
+			long checkTime = Tools.getMonday(date.split("-")[0]);
 			File fileRoot = new File(date);
 			path = fileRoot.getAbsolutePath();
 			Log.info("数据校验任务执行开始" + path);
@@ -46,8 +50,10 @@ public class CheckImpl {
 				File crmCheckFile = new File(crmFileName);
 				if (crmCheckFile.exists() && crmCheckFile.isFile()) {
 					crmCheck = crmCheckFile.lastModified() < crmFile.lastModified();
-					List<String[]> list = FileUtil.readTxt(crmCheckFile);
+					List<String[]> list = FileUtil.readTxt(crmCheckFile, ",");
 					crmDone = list.get(0)[0].equals("check");
+				} else {
+					crmCheck = crmFile.lastModified() > checkTime;
 				}
 			} else {
 				crmCheck = false;
@@ -59,8 +65,10 @@ public class CheckImpl {
 				File labCheckFile = new File(labFileName);
 				if (labCheckFile.exists() && labCheckFile.isFile()) {
 					labCheck = labCheckFile.lastModified() < labFile.lastModified();
-					List<String[]> list = FileUtil.readTxt(labCheckFile);
+					List<String[]> list = FileUtil.readTxt(labCheckFile, ",");
 					labDone = list.get(0)[0].equals("check");
+				} else {
+					labCheck = labFile.lastModified() > checkTime;
 				}
 			} else {
 				labCheck = false;
@@ -68,10 +76,20 @@ public class CheckImpl {
 			}
 			File testFile = new File(path + File.separator + "testNO-" + date + ".csv");
 			if (testFile.exists() && testFile.isFile()) {
-				List<String[]> list = FileUtil.readTxt(testFile);
-				for (String[] data : list) {
-					idMap.put(data[0], new boolean[2]);
+				BufferedReader reader = new BufferedReader(new FileReader(testFile));
+				String line;
+				String[] lines;
+				boolean flag = true;
+				while ((line = reader.readLine()) != null) {
+					if (flag) {
+						flag = false;
+						line = line.startsWith(Tools.UTF8_BOM) ? line.substring(1) : line;
+					}
+					lines = line.split(",");
+					idMap.put(lines[0], new boolean[2]);
+					idDataMap.put(lines[0], line);
 				}
+				reader.close();
 			}
 			File checkFile = new File(path + File.separator + "check");
 			if (!checkFile.exists()) {
@@ -84,12 +102,19 @@ public class CheckImpl {
 							Object[] object = crmList.get(i);
 							String id = Tools.isNotNull(object[21]) ? object[21].toString()
 									: "第" + (i + 2) + "行数据检测编号为空";
-							if (Tools.isNotNull(object[21])) {
-								if (idMap.containsKey(id)) {// 检测编号存在
-									idMap.get(id)[0] = true;
+							if (Tools.isNotNull(object[54]) && object[54].equals("否")) {
+								idMap.remove(id);
+								idDataMap.remove(id);
+							} else {
+								if (Tools.isNotNull(object[21])) {
+									if (idMap.containsKey(id)) {// 检测编号存在
+										idMap.get(id)[0] = true;
+										checkCrm(id, crmObject, object);
+									}
+								} else {
+									checkCrm(id, crmObject, object);
 								}
 							}
-							checkCrm(id, crmObject, object);
 						}
 						Log.error("crmErr:" + crmErr.size());
 					} else {
@@ -102,9 +127,11 @@ public class CheckImpl {
 							if (Tools.isNotNull(object[0])) {
 								if (idMap.containsKey(id)) {// 检测编号存在
 									idMap.get(id)[1] = true;
+									checkLab(id, labObject, object);
 								}
+							} else {
+								checkLab(id, labObject, object);
 							}
-							checkLab(id, labObject, object);
 						}
 						Log.error("labErr:" + labErr.size());
 					} else {
@@ -112,6 +139,12 @@ public class CheckImpl {
 					}
 
 					try {
+						FileWriter testWriter = new FileWriter(testFile);
+						testWriter.write(Tools.UTF8_BOM);
+						for (Map.Entry<String, String> entry : idDataMap.entrySet()) {
+							testWriter.write(entry.getValue() + "\r\n");
+						}
+						testWriter.close();
 						String[] fileName = new String[2];
 						FileWriter crmWriter = new FileWriter(crmFileName);
 						crmWriter.write(Tools.UTF8_BOM);
@@ -154,11 +187,11 @@ public class CheckImpl {
 								}
 							}
 						}
-						if (crmCheck && crmErr.size() == 0) {
+						if (fileName[0] == null && crmCheck) {
 							crmWriter.write("check");
 							crmDone = true;
 						}
-						if (labCheck && labErr.size() == 0) {
+						if (fileName[1] == null && labCheck) {
 							labWriter.write("check");
 							labDone = true;
 						}
@@ -212,68 +245,69 @@ public class CheckImpl {
 				switch (i) {
 				case 2:// 区域[北东区、南区、中区、总部]
 					if (!baseData.areaList.contains(val)) {
-						list.add(str[i] + "不在标准列表中[" + val + "]");
+						list.add(str[i] + ",不在标准列表中[" + val + "]");
 					}
 					break;
 				case 5:// 送样日期[yyyy/mm/dd]
 					try {
 						Tools.format1.parse(val);
 					} catch (Exception e) {
-						list.add(str[i] + "[格式不对-" + val + "]");
+						list.add(str[i] + ",[格式不对-" + val + "]");
 					}
 					break;
 				case 6:// 收样时间[yyyy/mm/dd]
 					try {
 						Tools.format1.parse(val);
 					} catch (Exception e) {
-						list.add(str[i] + "[格式不对-" + val + "]");
+						list.add(str[i] + ",[格式不对-" + val + "]");
 					}
 					break;
 				case 13:// 医院ID[CON+数字编号]
 					if (!val.startsWith("CON") || !val.substring(3).matches("^[0-9]*$")) {
-						list.add(str[i] + "[格式不对-" + val + "]");
+						list.add(str[i] + ",[格式不对-" + val + "]");
 					}
 					break;
 				case 18:// 客户ID[D+数字编号]
+					val = val.trim();
 					if (!val.startsWith("D") || !val.substring(1).matches("^[0-9]*$")) {
-						list.add(str[i] + "[格式不对-" + val + "]");
+						list.add(str[i] + ",[格式不对-" + val + "]");
 					}
 					break;
 				case 21:// 检测编号[TSJY/TSCZ/ZXAS/ZXAC/TS+7位数字]
 					if (val.length() == 11) {
-						if ((!val.startsWith("TSJY") || !val.startsWith("TSCZ") || !val.startsWith("ZXAS")
-								|| !val.startsWith("ZXAC")) || !val.substring(4).matches("^[0-9]*$")) {
-							list.add(str[i] + "[格式不对-" + val + "]");
+						if (!((val.startsWith("TSJY") || val.startsWith("TSCZ") || val.startsWith("ZXAS")
+								|| val.startsWith("ZXAC")) && val.substring(4).matches("^[0-9]*$"))) {
+							list.add(str[i] + ",[格式不对-" + val + "]");
 						}
 					} else if (val.length() == 9) {
 						if (!val.startsWith("TSJY") || !val.substring(2).matches("^[0-9]*$")) {
-							list.add(str[i] + "[格式不对-" + val + "]");
+							list.add(str[i] + ",[格式不对-" + val + "]");
 						}
 					} else {
-						list.add(str[i] + "[格式不对-" + val + "]");
+						list.add(str[i] + ",[格式不对-" + val + "]");
 					}
 					break;
 				case 22:// 22-患者ID[4位英文字母+4位数字]
 					if (val.length() != 8 || !val.substring(0, 4).matches("[a-zA-Z]+")
 							|| !val.substring(4).matches("^[0-9]*$")) {
-						list.add(str[i] + "[格式不对-" + val + "]");
+						list.add(str[i] + ",[格式不对-" + val + "]");
 					}
 					break;
 				case 24:// 出生时间[yyyy-mm-dd]
 					try {
 						Tools.format2.parse(val);
 					} catch (Exception e) {
-						list.add(str[i] + "[格式不对-" + val + "]");
+						list.add(str[i] + ",[格式不对-" + val + "]");
 					}
 					break;
 				case 25:// 性别[男/女]
 					if (!val.equals("男") && !val.equals("女")) {
-						list.add(str[i] + "不在标准列表中[" + val + "]");
+						list.add(str[i] + ",不在标准列表中[" + val + "]");
 					}
 					break;
 				case 26:// 癌种[要与癌种列表中内容匹配]
 					if (!baseData.cancerList.contains(val)) {
-						list.add("癌种不在标准列表中[" + object[26] + "]");
+						list.add("癌种不在标准列表中,[" + object[26] + "]");
 					}
 					break;
 				case 30:// 肿瘤样本[要与17类样本类型标准相符]
@@ -282,15 +316,15 @@ public class CheckImpl {
 					break;
 				case 34:// 检测项目产品编号[PRO+数字编号]
 					if (!val.startsWith("PRO") || !val.substring(3).matches("^[0-9]*$")) {
-						list.add(str[i] + "[格式不对-" + val + "]");
+						list.add(str[i] + ",[格式不对-" + val + "]");
 					}
 					break;
 				case 35:// 检测项目[要与标准名称类表中内容匹配]
 					if (!baseData.projectMap.containsKey(val)) {
-						list.add("检测项目不在标准列表中[" + object[35] + "]");
+						list.add("检测项目不在标准列表中,[" + object[35] + "]");
 					} else {
 						if (object[47] == null || !baseData.projectMap.get(val).equals(object[47].toString())) {
-							list.add("PanelType不在标准列表中[" + object[47] + "]");
+							list.add("PanelType不在标准列表中,[" + object[47] + "]");
 						}
 					}
 					break;
@@ -298,7 +332,7 @@ public class CheckImpl {
 					break;
 				}
 			} else {
-				list.add(str[i] + "[值为空]");
+				list.add(str[i] + ",[值为空]");
 			}
 		}
 		if (list.size() > 0) {
@@ -319,17 +353,13 @@ public class CheckImpl {
 			list = new ArrayList<String>();
 		}
 		if (object[1] == null || !baseData.sampleList.contains(object[1].toString().toUpperCase())) {
-			list.add("样本类型不在标准列表中[" + object[1] + "]");
+			list.add("样本类型不在标准列表中,[" + object[1] + "]");
 		}
 		if (object[4] == null || object[4].toString().length() == 0) {
-			list.add("唯一样本id[为空]");
+			list.add("唯一样本id,[为空]");
 		}
 		if (list.size() > 0) {
 			labErr.put(id, list);
 		}
-	}
-
-	public static void main(String[] args) {
-		System.out.println("A0919".matches("^[0-9]*$"));
 	}
 }

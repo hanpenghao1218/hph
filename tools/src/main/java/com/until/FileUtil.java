@@ -16,7 +16,7 @@ public class FileUtil {
 	 * @return
 	 * @throws Exception
 	 */
-	public static List<String[]> readTxt(File file) throws Exception {
+	public static List<String[]> readTxt(File file,String regex) throws Exception {
 		BufferedReader reader = new BufferedReader(new FileReader(file));
 		String line;
 		List<String[]> list = new ArrayList<String[]>();
@@ -26,7 +26,7 @@ public class FileUtil {
 				flag = false;
 				line = line.startsWith(Tools.UTF8_BOM) ? line.substring(1) : line;
 			}
-			list.add(line.split(","));
+			list.add(line.split(regex));
 		}
 		reader.close();
 		return list;

@@ -44,6 +44,11 @@ public class Tools {
 		return begDate + "-" + endDate;
 	}
 
+	public static long getMonday(String date) throws Exception {
+		return getMonday(format.parse(date));
+	}
+
+	
 	/**
 	 * 取某个时间所在周一0点
 	 * 
@@ -79,7 +84,7 @@ public class Tools {
 	public static long getThisMonday() {
 		return getMonday(new Date());
 	}
-
+	
 	/**
 	 * 取当前周
 	 * 
@@ -100,6 +105,10 @@ public class Tools {
 
 	public static boolean isNotNull(Object val) {
 		return val != null && val.toString().trim().length() > 0;
+	}
+
+	public static boolean isNull(Object val) {
+		return val == null || val.toString().trim().length() == 0;
 	}
 
 	public static void main(String[] args) {

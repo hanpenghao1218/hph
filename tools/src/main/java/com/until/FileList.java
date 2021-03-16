@@ -32,8 +32,11 @@ public class FileList {
 						name = (name.indexOf("CFTNA") > 0
 								? name.substring(name.indexOf("P") + 1, name.indexOf("-")).trim()
 								: name.substring(0, 8)) + "P-FFPE";
-						zipPath = "s3" + File.separator + "proton" + File.separator + name.substring(0, 4) + "-"
-								+ name.substring(4, 6) + File.separator + name;
+//						zipPath = "s3" + File.separator + "proton" + File.separator + name.substring(0, 4) + "-"
+//								+ name.substring(4, 6) + File.separator + name;
+						zipPath = "s3" + File.separator + "proton" + File.separator + file.getName().substring(0, 4)
+								+ "-" + file.getName().substring(4, 6) + File.separator + file.getName().substring(0, 8)
+								+ "P-FFPE";
 						for (int i = 1; i < datas.size(); i++) {
 							object = datas.get(i);
 							if (Tools.isNotNull(object[2])) {

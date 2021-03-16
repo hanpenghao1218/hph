@@ -16,6 +16,7 @@ public class Test implements CommandLineRunner {
 
 	@Override
 	public void run(String... args) throws Exception {
+//		args = new String[] {"2","20210222-20210228"};
 		if (args.length > 0) {
 			baseData.init();
 			if (args[0].equals("1")) {
@@ -28,5 +29,7 @@ public class Test implements CommandLineRunner {
 			}
 			System.exit(0);
 		}
+//		CheckImpl check = new CheckImpl();
+//		check.run(baseData, null);
 	}
 }

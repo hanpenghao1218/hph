@@ -37,8 +37,8 @@ public class BaseData implements Serializable {
 	/**
 	 * 样本类型
 	 */
-	public List<String> sampleList = Arrays.asList("血液", "组织切片", "新鲜组织", "胸/腹水", "福尔马林固定组织", "蜡卷", "蜡块", "染色片", "唾液",
-			"口腔拭子", "骨髓", "穿刺样本", "脑脊液", "DNA", "血浆", "血细胞", "心包积液");
+	public List<String> sampleList = Arrays.asList("血液", "组织切片", "新鲜组织", "胸水", "腹水", "福尔马林固定组织", "蜡卷", "蜡块", "染色片",
+			"唾液", "口腔拭子", "骨髓", "穿刺样本", "脑脊液", "DNA", "血浆", "血细胞", "心包积液");
 
 	/**
 	 * 区域
