@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 import org.apache.poi.ss.usermodel.Cell;
@@ -99,6 +101,10 @@ public class ExcelUntil {
 		return list;
 	}
 
+	public static List<Object[]> read(FileInputStream inputStream, String key) {
+		return read(inputStream, key, false);
+	}
+
 	/**
 	 * 读取excel
 	 * 
@@ -106,7 +112,7 @@ public class ExcelUntil {
 	 * @param key         开始读取关键字
 	 * @return
 	 */
-	public static List<Object[]> read(FileInputStream inputStream, String key) {
+	public static List<Object[]> read(FileInputStream inputStream, String key, boolean like) {
 		Workbook wb = null;
 		// 读取Excel
 		List<Object[]> list = new ArrayList<Object[]>();
@@ -114,48 +120,61 @@ public class ExcelUntil {
 			wb = new XSSFWorkbook(inputStream);
 			// 使用wb。getNumberOfSheets获得sheet数目。。
 			// 获取sheet数目
-			Sheet sheet = wb.getSheetAt(0);
-			Row row = null;
-			int lastRowNum = sheet.getLastRowNum();
-			// 循环读取
-			boolean check = true, end = false;
-			for (int i = 0; i <= lastRowNum; i++) {
-				row = sheet.getRow(i);
-				if (row != null) {
-					// 获取每一列的值
-					Object[] data = null;
-					for (int j = 0; j < row.getLastCellNum(); j++) {
-						Object value = getCellValue(row.getCell(j));
-						if (check) {
-							if (value instanceof String && value.toString().indexOf("上机表") > 0) {
-								data = new Object[1];
-								data[0] = value;
-							}
-						} else if (data != null) {
-							data[j] = value;
-						}
-						if (j == 0) {
+			Iterator<Sheet> iterator = wb.sheetIterator();
+			while (iterator.hasNext()) {
+//				Sheet sheet = wb.getSheetAt(0);
+				Sheet sheet = iterator.next();
+				Row row = null;
+				int lastRowNum = sheet.getLastRowNum();
+				// 循环读取
+				boolean check = true, end = false;
+				for (int i = 0; i <= lastRowNum; i++) {
+					row = sheet.getRow(i);
+					if (row != null) {
+						// 获取每一列的值
+						Object[] data = null;
+						for (int j = 0; j < row.getLastCellNum(); j++) {
+							Object value = getCellValue(row.getCell(j));
 							if (check) {
-								if (value instanceof String && value.toString().equals(key)) {
-									check = false;
-									break;
-								}
-							} else {
-								if (Tools.isNotNull(value)) {
-									data = new Object[row.getLastCellNum()];
+								if (value instanceof String && value.toString().indexOf("上机表") > 0) {
+									data = new Object[1];
 									data[0] = value;
 								}
+							} else if (data != null) {
+								data[j] = value;
+							}
+							if (j == 0) {
+								if (check) {
+									if (like) {
+										if (value instanceof String && value.toString().indexOf(key) > -1) {
+											check = false;
+											break;
+										}
+									} else {
+										if (value instanceof String && value.toString().equals(key)) {
+											check = false;
+											break;
+										}
+									}
+								} else {
+									if (Tools.isNotNull(value)) {
+										data = new Object[row.getLastCellNum()];
+										data[0] = value;
+									}
+								}
 							}
 						}
-					}
-					if (data != null) {
-						list.add(data);
-					}
-					if (end) {
-						break;
+						if (data != null) {
+							list.add(data);
+						}
+						if (end) {
+							break;
+						}
 					}
 				}
+
 			}
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		} finally {
@@ -169,41 +188,47 @@ public class ExcelUntil {
 		return list;
 	}
 
-	private static Object getCellValue(Cell cell) {
+	public static Object getCellValue(Cell cell) {
 		Object result = "";
 		if (cell != null) {
-			switch (cell.getCellType()) {
-			case STRING:
-				result = cell.getStringCellValue().replaceAll("[\\t\\n\\r]", "").replaceAll("\\s+", " ");
-				break;
-			case NUMERIC:
-				if (DateUtil.isCellDateFormatted(cell)) {
-					String temp = cell.getCellStyle().getDataFormatString();
-					if (temp.equals("m/d/yy")) {
-						result = Tools.format1.format(cell.getDateCellValue());
-					} else if (temp.equals("General")) {
-						DecimalFormat format = new DecimalFormat();
-						format.applyPattern("#");
-						result = format.format(cell.getNumericCellValue());
+			try {
+				switch (cell.getCellType()) {
+				case STRING:
+					result = cell.getStringCellValue().replaceAll("[\\t\\n\\r]", "").replaceAll("\\s+", " ");
+					break;
+				case NUMERIC:
+					if (DateUtil.isCellDateFormatted(cell)) {
+						String temp = cell.getCellStyle().getDataFormatString();
+						if (temp.equals("m/d/yy")) {
+							result = Tools.format1.format(cell.getDateCellValue());
+						} else if (temp.equals("General")) {
+							DecimalFormat format = new DecimalFormat();
+							format.applyPattern("#");
+							result = format.format(cell.getNumericCellValue());
+						} else {
+							result = Tools.format2.format(cell.getDateCellValue());
+						}
+					} else {
+						result = cell.getNumericCellValue();
 					}
-				} else {
+					break;
+				case BOOLEAN:
+					result = cell.getBooleanCellValue();
+					break;
+				case FORMULA:
 					result = cell.getNumericCellValue();
+					break;
+				case ERROR:
+					result = cell.getErrorCellValue();
+					break;
+				case BLANK:
+					result = " ";
+					break;
+				default:
+					break;
 				}
-				break;
-			case BOOLEAN:
-				result = cell.getBooleanCellValue();
-				break;
-			case FORMULA:
-				result = cell.getNumericCellValue();
-				break;
-			case ERROR:
-				result = cell.getErrorCellValue();
-				break;
-			case BLANK:
-				result = " ";
-				break;
-			default:
-				break;
+			} catch (Exception e) {
+				result = cell.getStringCellValue();
 			}
 		}
 		return result;
@@ -220,11 +245,15 @@ public class ExcelUntil {
 //				System.out.println(i + "-" + objects[i] + "[" + objects1[i] + "]");
 //			}
 //		}
-		
-		List<Object[]> list = read(new FileInputStream(new File("poject.xlsx")), "序号");
+
+		List<Object[]> list = read(new FileInputStream(new File("CRM/CRM data summary-From 20210201 till now.xlsm")), 1,
+				0);
 		for (Object[] objects : list) {
-//			System.out.println(Arrays.toString(objects));
-			System.out.println("put(\""+objects[4].toString().trim()+"\", \""+objects[3].toString()+"\");");
+			if (objects[21].toString().equals("TSJY2044863")) {
+				System.out.println(objects[24]);
+				System.out.println(Arrays.toString(objects));
+			}
+//			System.out.println("put(\""+objects[4].toString().trim()+"\", \""+objects[3].toString()+"\");");
 		}
 	}
 }

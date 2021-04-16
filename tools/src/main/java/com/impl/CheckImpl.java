@@ -20,6 +20,7 @@ import com.until.Email;
 import com.until.ExcelUntil;
 import com.until.FileUtil;
 import com.until.Tools;
+import com.until.ZipUtil;
 
 @Component
 public class CheckImpl {
@@ -44,7 +45,7 @@ public class CheckImpl {
 			crmFileName = path + File.separator + "专患数据问题整改-运营-" + date + ".csv";
 			labFileName = path + File.separator + "专患数据问题整改-检测中心-" + date + ".csv";
 			boolean crmCheck = true, labCheck = true, crmDone = false, labDone = false;
-			File crmFile = new File("CRM" + File.separator + "CRM data summary-From 20210201 till now.xlsx");
+			File crmFile = new File("CRM" + File.separator + "CRM data summary-From 20210201 till now.xlsm");
 			if (crmFile != null && crmFile.isFile()) {
 				crmList = ExcelUntil.read(crmFile, 1, 0);
 				File crmCheckFile = new File(crmFileName);
@@ -59,7 +60,11 @@ public class CheckImpl {
 				crmCheck = false;
 				Log.error(crmFile.getName() + "文件不存在");
 			}
-			File labFile = new File("lab" + File.separator + "lab data summary-From 20210201 till now.xlsx");
+			String[] dates = date.split("-");
+			File labFile = new File(path + File.separator + "lab data summary-From " + dates[0] + " till " + dates[1] + ".xlsx");
+			if (labFile == null || !labFile.isFile()) {
+				labFile = new File("lab" + File.separator + "lab data summary-From 20210201 till now.xlsx");
+			}
 			if (labFile != null && labFile.isFile()) {
 				labList = ExcelUntil.read(labFile, 3, 22);
 				File labCheckFile = new File(labFileName);
@@ -146,23 +151,19 @@ public class CheckImpl {
 						}
 						testWriter.close();
 						String[] fileName = new String[2];
-						FileWriter crmWriter = new FileWriter(crmFileName);
-						crmWriter.write(Tools.UTF8_BOM);
+						StringBuffer crmBuffer = new StringBuffer();
 						for (Map.Entry<String, List<String>> entry : crmErr.entrySet()) {
 							for (String str : entry.getValue()) {
-								crmWriter.write(entry.getKey() + "," + str);
-								crmWriter.write("\r\n");
+								crmBuffer.append(entry.getKey()).append(",").append(str).append("\r\n");
 							}
 							if (fileName[0] == null) {
 								fileName[0] = crmFileName;
 							}
 						}
-						FileWriter labWriter = new FileWriter(labFileName);
-						labWriter.write(Tools.UTF8_BOM);
+						StringBuffer labBuffer = new StringBuffer();
 						for (Map.Entry<String, List<String>> entry : labErr.entrySet()) {
 							for (String str : entry.getValue()) {
-								labWriter.write(entry.getKey() + "," + str);
-								labWriter.write("\r\n");
+								labBuffer.append(entry.getKey()).append(",").append(str).append("\r\n");
 							}
 							if (fileName[1] == null) {
 								fileName[1] = labFileName;
@@ -172,7 +173,7 @@ public class CheckImpl {
 						for (Map.Entry<String, boolean[]> entry : idMap.entrySet()) {
 							if (!crmDone && crmCheck) {
 								if (!entry.getValue()[0]) {
-									crmWriter.write(entry.getKey() + ",数据缺失\r\n");
+									crmBuffer.append(entry.getKey()).append(",数据缺失\r\n");
 									if (fileName[0] == null) {
 										fileName[0] = crmFileName;
 									}
@@ -180,23 +181,35 @@ public class CheckImpl {
 							}
 							if (!labDone && labCheck) {
 								if (!entry.getValue()[1]) {
-									labWriter.write(entry.getKey() + ",数据缺失\r\n");
+									labBuffer.append(entry.getKey()).append(",数据缺失\r\n");
 									if (fileName[1] == null) {
 										fileName[1] = labFileName;
 									}
 								}
 							}
 						}
-						if (fileName[0] == null && crmCheck) {
-							crmWriter.write("check");
+						if (crmBuffer.length() == 0 && crmCheck) {
+							crmBuffer.append("check");
 							crmDone = true;
+							Email.sendMail(baseData.CRMEmails, "专患系统数据校验结果" + date, "CRM部分校验完成没有异常", new String[0]);
 						}
-						if (fileName[1] == null && labCheck) {
-							labWriter.write("check");
+						if (labBuffer.length() == 0 && labCheck) {
+							labBuffer.append("check");
 							labDone = true;
+							Email.sendMail(baseData.labEmails, "专患系统数据校验结果" + date, "检测中心部分校验完成没有异常", new String[0]);
 						}
-						crmWriter.close();
-						labWriter.close();
+						if (crmBuffer.length() > 0) {
+							FileWriter crmWriter = new FileWriter(crmFileName);
+							crmWriter.write(Tools.UTF8_BOM);
+							crmWriter.write(crmBuffer.toString());
+							crmWriter.close();
+						}
+						if (labBuffer.length() > 0) {
+							FileWriter labWriter = new FileWriter(labFileName);
+							labWriter.write(Tools.UTF8_BOM);
+							labWriter.write(labBuffer.toString());
+							labWriter.close();
+						}
 						if (Tools.isNotNull(fileName[0])) {
 							Log.info("发送CRM错误邮件");
 							Email.sendMail(baseData.CRMEmails, "专患系统数据校验结果" + date, "错误数据请见附件", fileName[0]);
@@ -210,6 +223,7 @@ public class CheckImpl {
 									new FileOutputStream(new File("testNO" + File.separator + testFile.getName())));
 							Log.info("数据校验完成，没有错误");
 							new File(path + File.separator + "check").createNewFile();
+							ZipUtil.uzip(path + File.separator + "testNO-" + date + ".csv", true);
 							Email.sendMail(baseData.Emails, "专患系统数据校验结果" + date, "校验完成没有异常", new String[0]);
 						}
 					} catch (Exception e) {
@@ -273,17 +287,29 @@ public class CheckImpl {
 						list.add(str[i] + ",[格式不对-" + val + "]");
 					}
 					break;
-				case 21:// 检测编号[TSJY/TSCZ/ZXAS/ZXAC/TS+7位数字]
-					if (val.length() == 11) {
+				case 21:// 检测编号[K20102-/TSMK/MK/GT TSJY/TSCZ/ZXAS/ZXAC/TS+7位数字]
+					if (val.startsWith("K20102-")) {
+						if (!val.substring(7).matches("^[0-9]*$")) {
+							list.add(str[i] + ",[格式不对-" + val + "]");
+						}
+					} else if (val.startsWith("TSMK")) {
+						if (!val.substring(4).matches("^[0-9]*$")) {
+							list.add(str[i] + ",[格式不对-" + val + "]");
+						}
+					} else if (val.startsWith("MK")) {
+						if (!val.substring(2).matches("^[0-9]*$")) {
+							list.add(str[i] + ",[格式不对-" + val + "]");
+						}
+					} else if (val.length() == 11) {
 						if (!((val.startsWith("TSJY") || val.startsWith("TSCZ") || val.startsWith("ZXAS")
 								|| val.startsWith("ZXAC")) && val.substring(4).matches("^[0-9]*$"))) {
 							list.add(str[i] + ",[格式不对-" + val + "]");
 						}
 					} else if (val.length() == 9) {
-						if (!val.startsWith("TSJY") || !val.substring(2).matches("^[0-9]*$")) {
+						if (!val.startsWith("TS") || !val.substring(2).matches("^[0-9]*$")) {
 							list.add(str[i] + ",[格式不对-" + val + "]");
 						}
-					} else {
+					} else if (!val.startsWith("GT")) {
 						list.add(str[i] + ",[格式不对-" + val + "]");
 					}
 					break;
@@ -320,10 +346,10 @@ public class CheckImpl {
 					}
 					break;
 				case 35:// 检测项目[要与标准名称类表中内容匹配]
-					if (!baseData.projectMap.containsKey(val)) {
+					if (!BaseData.projectMap.containsKey(val)) {
 						list.add("检测项目不在标准列表中,[" + object[35] + "]");
 					} else {
-						if (object[47] == null || !baseData.projectMap.get(val).equals(object[47].toString())) {
+						if (object[47] == null || !BaseData.projectMap.get(val).equals(object[47].toString())) {
 							list.add("PanelType不在标准列表中,[" + object[47] + "]");
 						}
 					}

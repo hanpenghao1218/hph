@@ -3,6 +3,8 @@ package com.until;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Tools {
 	public static long week = 24 * 3600 * 1000 * 7;
@@ -48,7 +50,6 @@ public class Tools {
 		return getMonday(format.parse(date));
 	}
 
-	
 	/**
 	 * 取某个时间所在周一0点
 	 * 
@@ -84,7 +85,7 @@ public class Tools {
 	public static long getThisMonday() {
 		return getMonday(new Date());
 	}
-	
+
 	/**
 	 * 取当前周
 	 * 
@@ -111,8 +112,38 @@ public class Tools {
 		return val == null || val.toString().trim().length() == 0;
 	}
 
+	/**
+	 * 取string中的数字
+	 * 
+	 * @param str
+	 * @return
+	 */
+	public static int getNum(String str) {
+		String regEx = "[^0-9]";
+		Pattern p = Pattern.compile(regEx);
+		Matcher m = p.matcher(str);
+		return Integer.valueOf(m.replaceAll("").trim());
+	}
+
+	/**
+	 * 判断该字符串是否为中文
+	 * @param string
+	 * @return
+	 */
+	public static boolean isChinese(String string){
+	    int n = 0;
+	    for(int i = 0; i < string.length(); i++) {
+	        n = (int)string.charAt(i);
+	        if(!(19968 <= n && n <40869)) {
+	            return false;
+	        }
+	    }
+	    return true;
+	}
+
 	public static void main(String[] args) {
 //		System.out.println(getLastWeek());
-		getMonday(new Date(System.currentTimeMillis() - 24 * 3600 * 1000));
+//		getMonday(new Date(System.currentTimeMillis() - 24 * 3600 * 1000));
+		System.out.println(getNum("1++"));
 	}
 }

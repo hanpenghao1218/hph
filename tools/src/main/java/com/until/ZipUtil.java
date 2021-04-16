@@ -103,7 +103,7 @@ public class ZipUtil {
 		}
 	}
 
-	public static void uzip(String dataFile) throws Exception {
+	public static void uzip(String dataFile, boolean delete) throws Exception {
 		BufferedReader reader = new BufferedReader(new FileReader(new File(dataFile)));
 		String line;
 		boolean flag = true;
@@ -129,7 +129,9 @@ public class ZipUtil {
 		}
 		for (Map.Entry<String, List<String>> entry : map.entrySet()) {
 			if (entry.getKey().equals("illumina")) {
-				System.out.println("illumina目录删除：" + FileUtil.deleteDir("illumina" + File.separator));
+				if (delete) {
+					System.out.println("illumina目录删除：" + FileUtil.deleteDir("illumina" + File.separator));
+				}
 				for (String str : entry.getValue()) {
 					System.out.println(str);
 					int index = str.lastIndexOf(File.separator) + 1;
@@ -147,7 +149,9 @@ public class ZipUtil {
 					}
 				}
 			} else if (entry.getKey().equals("proton")) {
-				System.out.println("proton目录删除：" + FileUtil.deleteDir("proton" + File.separator));
+				if (delete) {
+					System.out.println("proton目录删除：" + FileUtil.deleteDir("proton" + File.separator));
+				}
 				for (String str : entry.getValue()) {
 					System.out.println(str);
 					for (String type : fileType) {
@@ -173,7 +177,7 @@ public class ZipUtil {
 
 	public static void main(String[] args) throws Exception {
 //		unZipFiles("20210225P-FFPE.tar.gz", "proton");
-//		uzip("20210222-20210228/testNO-20210222-20210228.csv");
+		uzip("20210222-20210228/testNO-20210222-20210228.csv", true);
 		File file = new File("proton" + File.separator);
 		System.out.println(file.getName() + "--" + file.exists());
 		System.out.println(file.delete());

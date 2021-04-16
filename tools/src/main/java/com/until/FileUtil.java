@@ -26,7 +26,9 @@ public class FileUtil {
 				flag = false;
 				line = line.startsWith(Tools.UTF8_BOM) ? line.substring(1) : line;
 			}
-			list.add(line.split(regex));
+			if (Tools.isNotNull(line)) {
+				list.add(line.split(regex));
+			}
 		}
 		reader.close();
 		return list;
